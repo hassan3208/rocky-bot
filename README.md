@@ -5,4 +5,5 @@ This is simple chatbot where someone can upload its documents and rocky bot will
 (pip install PyPDF2 python-docx langchain faiss-cpu streamlit python-dotenv torch)
 
 2> https://octoai.cloud/text login octoAi on the provided link and get your api key.
+
 3> paste your api-key in .env file
