@@ -27,12 +27,11 @@ def get_text_chunks(text):
 def get_file_text(file_docs):
     text = ''
     for file in file_docs:
-        filename=file.name
+        filename = file.name
         if filename.endswith('.pdf'):
             pdfreader = PdfReader(file)
             for page in pdfreader.pages:
                 text += page.extract_text()
-                
         elif filename.endswith('.docx'):
             doc = Document(file)
             for paragraph in doc.paragraphs:
@@ -42,22 +41,26 @@ def get_file_text(file_docs):
 def main():
     load_dotenv()
     st.set_page_config(page_title='ROCKY BOT', page_icon=':books:')
-    st.header('Chat with Multiple PDFs :book:')
+    st.header('Chat with Multiple DOCUMENTs :book:')
     
-    # ADD COLUMN THAT SAVES QUESTION AND ANSWERS HISTORY
+    
+    # Change 1: Initialization checks added
+    # Initialize session state variables
     if 'qa_history' not in st.session_state:
         st.session_state['qa_history'] = []
-    
-    # TAKE INPUT AS QUESTION
+    if 'vector_storage' not in st.session_state:
+        st.session_state['vector_storage'] = None
+    if 'loaded_document' not in st.session_state:
+        st.session_state['loaded_document'] = False
+
+    # Take input as question
     question = st.text_input('Ask me a question about the document')
-
-    if 'vector_storage' in st.session_state:
+    
+    
+    
+     # Change 2: Simplified the check for vector_storage
+    if question and st.session_state['vector_storage']:
         vectorstore = st.session_state['vector_storage']
-    else:
-        vectorstore = None
-
-    if question and vectorstore:
-        similar_docs = vectorstore.similarity_search(question)
         response = vectorstore.similarity_search(question, k=6)
         octoai_api_key = os.getenv("OCTOAI_API_KEY")
         llm = OctoAIEndpoint(octoai_api_token=octoai_api_key, max_tokens=4000, temperature=0.1)
@@ -66,11 +69,11 @@ def main():
 
     with st.sidebar:
         st.subheader('Your Documents')
-        file_docs = st.file_uploader('Upload your PDF files here', accept_multiple_files=True, type=['pdf', 'docx'])
+        file_docs = st.file_uploader('Upload your files here', accept_multiple_files=True, type=['pdf', 'docx'])
 
-        if st.button('Process'):
+        if st.button('SUBMIT'):
             if file_docs:
-                with st.spinner('Processing...'):
+                with st.spinner('Processing.....'):
                     try:
                         raw_text = get_file_text(file_docs)
                         text_chunks = get_text_chunks(raw_text)
@@ -80,7 +83,7 @@ def main():
                             return
 
                         vectorstore = get_vectorstore(text_chunks, octoai_api_key)
-                        st.success("PDF processed successfully.")
+                        st.success("Documents processed successfully.")
                         st.session_state['loaded_document'] = True
                         st.session_state['vector_storage'] = vectorstore
 
@@ -88,14 +91,44 @@ def main():
                         traceback.print_exc()
                         st.error(f"An error occurred: {str(e)}")
             else:
-                st.error("Please upload at least one PDF file.")
+                st.error("Please upload at least one document.")
 
+    # Custom CSS for the boxes
+    custom_css = """
+    <style>
+    .qa-box {
+        position: relative;
+        border: 2px solid #007BFF; /* Blue border */
+        border-radius: 10px;
+        background-color: #FFFFFF; /* White background */
+        margin: 15px 0;
+        padding: 15px;
+        box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Light shadow for better visibility */
+    }
+    .question {
+        font-weight: bold;
+        color: #007BFF; /* Blue color */
+    }
+    .answer {
+        color: #000000; /* Orange-red color */
+    }
+    </style>
 
-# display all answers with questions
+    """
+
+    # Write the custom CSS to the Streamlit app
+    st.markdown(custom_css, unsafe_allow_html=True)
+
+    # Display the Q&A history in boxes
     if st.session_state['qa_history']:
         for i, (q, a) in enumerate(st.session_state['qa_history']):
-            st.write(f"**Q{i+1}: {q}**")
-            st.write(f"A{i+1}: {a}")
+            st.markdown(f"""
+            <div class="qa-box">
+                <p class="question">Q{i+1}: {q}</p>
+                <p class="answer">{a}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
 
 if __name__ == '__main__':
     main()
