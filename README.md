@@ -6,4 +6,4 @@ This is simple chatbot where someone can upload its documents and rocky bot will
 
 2> https://octoai.cloud/text login octoAi on the provided link and get your api key.
 
-3> paste your api-key in .env file
+3> paste your api-key in .env file.
